@@ -1,0 +1,123 @@
+{% extends "base.html" %}
+
+{% block title %}New Page - {{ project.name }}{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-md-12">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{{ url_for('dashboard') }}">Dashboard</a></li>
+                <li class="breadcrumb-item"><a href="{{ url_for('project_detail', project_id=project.id) }}">{{ project.name }}</a></li>
+                <li class="breadcrumb-item"><a href="{{ url_for('pages', project_id=project.id) }}">Pages</a></li>
+                <li class="breadcrumb-item active">New Page</li>
+            </ol>
+        </nav>
+        <h1><i class="bi bi-file-earmark-plus"></i> Create New Page</h1>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-8 offset-md-2">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0">Page Details</h5>
+            </div>
+            <div class="card-body">
+                <form method="POST">
+                    <div class="mb-3">
+                        <label for="title" class="form-label">Page Title *</label>
+                        <input type="text" class="form-control" id="title" name="title" required
+                               placeholder="e.g., About Us">
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="page_type" class="form-label">Page Type *</label>
+                        <select class="form-select" id="page_type" name="page_type" required>
+                            <option value="">Select page type...</option>
+                            <option value="home">Home</option>
+                            <option value="about">About</option>
+                            <option value="services">Services/Products</option>
+                            <option value="blog">Blog</option>
+                            <option value="contact">Contact</option>
+                            <option value="privacy">Privacy Policy</option>
+                            <option value="terms">Terms of Service</option>
+                            <option value="other">Other</option>
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="slug" class="form-label">URL Slug *</label>
+                        <div class="input-group">
+                            <span class="input-group-text">{{ project.domain or 'yourdomain.com' }}/</span>
+                            <input type="text" class="form-control" id="slug" name="slug" required
+                                   placeholder="about-us">
+                        </div>
+                        <div class="form-text">Use lowercase letters, numbers, and hyphens only</div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="meta_title" class="form-label">Meta Title (SEO Title)</label>
+                        <input type="text" class="form-control" id="meta_title" name="meta_title"
+                               maxlength="60" placeholder="30-60 characters">
+                        <div class="form-text">
+                            <span id="meta_title_count">0</span>/60 characters
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="meta_description" class="form-label">Meta Description</label>
+                        <textarea class="form-control" id="meta_description" name="meta_description" 
+                                  rows="3" maxlength="160" placeholder="120-160 characters"></textarea>
+                        <div class="form-text">
+                            <span id="meta_desc_count">0</span>/160 characters
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="content" class="form-label">Initial Content</label>
+                        <textarea class="form-control" id="content" name="content" 
+                                  rows="5" placeholder="You can add detailed content after creating the page"></textarea>
+                    </div>
+
+                    <div class="d-grid gap-2">
+                        <button type="submit" class="btn btn-primary btn-lg">
+                            <i class="bi bi-check-circle"></i> Create Page
+                        </button>
+                        <a href="{{ url_for('pages', project_id=project.id) }}" class="btn btn-outline-secondary">
+                            Cancel
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+$(document).ready(function() {
+    $('#meta_title').on('input', function() {
+        $('#meta_title_count').text($(this).val().length);
+    });
+    
+    $('#meta_description').on('input', function() {
+        $('#meta_desc_count').text($(this).val().length);
+    });
+    
+    $('#title').on('input', function() {
+        if (!$('#slug').val()) {
+            var slug = $(this).val().toLowerCase()
+                .replace(/[^a-z0-9]+/g, '-')
+                .replace(/^-+|-+$/g, '');
+            $('#slug').val(slug);
+        }
+        if (!$('#meta_title').val()) {
+            $('#meta_title').val($(this).val());
+            $('#meta_title_count').text($(this).val().length);
+        }
+    });
+});
+</script>
+{% endblock %}

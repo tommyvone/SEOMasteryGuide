@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+
+{% block title %}New Project - SEO Website Builder{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-8 offset-md-2">
+        <h1 class="mb-4">Create New SEO Project</h1>
+        
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0"><i class="bi bi-1-circle"></i> Step 1: Define Your Niche and Goals</h5>
+            </div>
+            <div class="card-body">
+                <form method="POST" action="{{ url_for('new_project') }}">
+                    <div class="mb-3">
+                        <label for="name" class="form-label">Project Name *</label>
+                        <input type="text" class="form-control" id="name" name="name" required 
+                               placeholder="e.g., My Organic Skincare Store">
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="niche" class="form-label">Business Niche *</label>
+                        <input type="text" class="form-control" id="niche" name="niche" required
+                               placeholder="e.g., Organic Skincare, Local Plumbing, Tech Consulting">
+                        <div class="form-text">What industry or market does your business serve?</div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="domain" class="form-label">Domain Name</label>
+                        <input type="text" class="form-control" id="domain" name="domain"
+                               placeholder="e.g., myorganicskincare.com">
+                        <div class="form-text">Short, memorable, and keyword-rich if possible (.com preferred)</div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="target_keywords" class="form-label">Target Keywords *</label>
+                        <textarea class="form-control" id="target_keywords" name="target_keywords" rows="3" required
+                                  placeholder="e.g., organic face cream, natural skincare products, vegan beauty"></textarea>
+                        <div class="form-text">Enter your main keywords separated by commas</div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="description" class="form-label">Project Description</label>
+                        <textarea class="form-control" id="description" name="description" rows="4"
+                                  placeholder="Describe your business, target audience, and goals..."></textarea>
+                    </div>
+
+                    <div class="alert alert-info">
+                        <i class="bi bi-lightbulb"></i> <strong>Tip:</strong> 
+                        Choose keywords that are relevant to your niche with low to medium competition. 
+                        Long-tail keywords (3-4 words) often perform better for new websites.
+                    </div>
+
+                    <div class="d-grid gap-2">
+                        <button type="submit" class="btn btn-primary btn-lg">
+                            <i class="bi bi-check-circle"></i> Create Project
+                        </button>
+                        <a href="{{ url_for('index') }}" class="btn btn-outline-secondary">Cancel</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

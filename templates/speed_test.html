@@ -1,0 +1,192 @@
+{% extends "base.html" %}
+
+{% block title %}Speed Test - {{ project.name }}{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-md-12">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{{ url_for('dashboard') }}">Dashboard</a></li>
+                <li class="breadcrumb-item"><a href="{{ url_for('project_detail', project_id=project.id) }}">{{ project.name }}</a></li>
+                <li class="breadcrumb-item active">Speed Test</li>
+            </ol>
+        </nav>
+        <h1><i class="bi bi-speedometer2"></i> Site Speed Analyzer</h1>
+        <p class="text-muted">Optimize your website performance for better SEO</p>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0"><i class="bi bi-play-circle"></i> Run Speed Test</h5>
+            </div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <label for="test_url" class="form-label">Current Page Performance</label>
+                    <p class="text-muted">Analyze this page's loading performance</p>
+                </div>
+                <button class="btn btn-primary" onclick="runPerformanceTest()">
+                    <i class="bi bi-lightning"></i> Analyze Current Page
+                </button>
+                <div id="performance-results" class="mt-4" style="display: none;">
+                    <h5>Performance Report</h5>
+                    <div class="row mt-3">
+                        <div class="col-md-6">
+                            <div class="card">
+                                <div class="card-body text-center">
+                                    <h6>Performance Score</h6>
+                                    <div style="font-size: 3rem; font-weight: bold;" id="perf-score">--</div>
+                                    <p id="perf-rating" class="text-muted">--</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="card">
+                                <div class="card-body">
+                                    <h6>Key Metrics</h6>
+                                    <dl class="row mb-0">
+                                        <dt class="col-sm-8">Page Load Time:</dt>
+                                        <dd class="col-sm-4" id="metric-load">--</dd>
+                                        <dt class="col-sm-8">Server Response:</dt>
+                                        <dd class="col-sm-4" id="metric-connect">--</dd>
+                                        <dt class="col-sm-8">DOM Ready:</dt>
+                                        <dd class="col-sm-4" id="metric-dom">--</dd>
+                                    </dl>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card mt-3">
+                        <div class="card-header">
+                            <h6 class="mb-0">Recommendations</h6>
+                        </div>
+                        <div class="card-body">
+                            <ul id="recommendations-list"></ul>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="mt-4">
+                    <h6>Mobile Responsiveness Check</h6>
+                    <button class="btn btn-success" onclick="runMobileCheck()">
+                        <i class="bi bi-phone"></i> Check Mobile Compatibility
+                    </button>
+                    <div id="mobile-results" class="mt-3" style="display: none;">
+                        <div class="card">
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between align-items-center mb-3">
+                                    <h6>Mobile-Friendly Score: <span id="mobile-score">--</span>%</h6>
+                                    <span id="mobile-badge" class="badge">--</span>
+                                </div>
+                                <div id="mobile-passes"></div>
+                                <div id="mobile-issues"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-list-check"></i> Speed Optimization Checklist</h5>
+            </div>
+            <div class="card-body">
+                <h6>Image Optimization</h6>
+                <ul>
+                    <li>Compress images before upload</li>
+                    <li>Use WebP format when possible</li>
+                    <li>Implement lazy loading</li>
+                    <li>Add responsive image sizes</li>
+                </ul>
+
+                <h6 class="mt-3">Code Optimization</h6>
+                <ul>
+                    <li>Minify CSS and JavaScript</li>
+                    <li>Remove unused code</li>
+                    <li>Enable GZIP compression</li>
+                    <li>Reduce HTTP requests</li>
+                </ul>
+
+                <h6 class="mt-3">Caching</h6>
+                <ul>
+                    <li>Enable browser caching</li>
+                    <li>Use CDN for static assets</li>
+                    <li>Implement server-side caching</li>
+                    <li>Cache database queries</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-tools"></i> Recommended Tools</h5>
+            </div>
+            <div class="card-body">
+                <div class="list-group">
+                    <a href="https://pagespeed.web.dev/" target="_blank" class="list-group-item list-group-item-action">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h6 class="mb-1">Google PageSpeed Insights</h6>
+                                <p class="mb-0 text-muted small">Analyze page speed and get optimization suggestions</p>
+                            </div>
+                            <i class="bi bi-box-arrow-up-right"></i>
+                        </div>
+                    </a>
+                    <a href="https://gtmetrix.com/" target="_blank" class="list-group-item list-group-item-action">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h6 class="mb-1">GTmetrix</h6>
+                                <p class="mb-0 text-muted small">Detailed performance reports and recommendations</p>
+                            </div>
+                            <i class="bi bi-box-arrow-up-right"></i>
+                        </div>
+                    </a>
+                    <a href="https://tools.pingdom.com/" target="_blank" class="list-group-item list-group-item-action">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h6 class="mb-1">Pingdom</h6>
+                                <p class="mb-0 text-muted small">Monitor website speed from multiple locations</p>
+                            </div>
+                            <i class="bi bi-box-arrow-up-right"></i>
+                        </div>
+                    </a>
+                    <a href="https://tinypng.com/" target="_blank" class="list-group-item list-group-item-action">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h6 class="mb-1">TinyPNG</h6>
+                                <p class="mb-0 text-muted small">Compress images without losing quality</p>
+                            </div>
+                            <i class="bi bi-box-arrow-up-right"></i>
+                        </div>
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <div class="card mt-3">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-phone"></i> Mobile Testing</h5>
+            </div>
+            <div class="card-body">
+                <p>Test mobile responsiveness:</p>
+                <a href="https://search.google.com/test/mobile-friendly" target="_blank" class="btn btn-outline-primary w-100 mb-2">
+                    <i class="bi bi-google"></i> Google Mobile-Friendly Test
+                </a>
+                <a href="https://www.browserstack.com/" target="_blank" class="btn btn-outline-primary w-100">
+                    <i class="bi bi-phone"></i> BrowserStack (Device Testing)
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

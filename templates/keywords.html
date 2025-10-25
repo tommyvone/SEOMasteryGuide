@@ -1,0 +1,214 @@
+{% extends "base.html" %}
+
+{% block title %}Keywords - {{ project.name }}{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-md-12">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{{ url_for('dashboard') }}">Dashboard</a></li>
+                <li class="breadcrumb-item"><a href="{{ url_for('project_detail', project_id=project.id) }}">{{ project.name }}</a></li>
+                <li class="breadcrumb-item active">Keywords</li>
+            </ol>
+        </nav>
+        <h1><i class="bi bi-key"></i> Keyword Research</h1>
+        <p class="text-muted">Track and analyze keywords for {{ project.name }}</p>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header bg-success text-white">
+                <h5 class="mb-0"><i class="bi bi-plus-circle"></i> Add New Keyword</h5>
+            </div>
+            <div class="card-body">
+                <form method="POST" action="{{ url_for('add_keyword', project_id=project.id) }}" class="row g-3">
+                    <div class="col-md-3">
+                        <label for="keyword" class="form-label">Keyword *</label>
+                        <input type="text" class="form-control" id="keyword" name="keyword" required
+                               placeholder="e.g., organic face cream">
+                    </div>
+                    <div class="col-md-2">
+                        <label for="search_volume" class="form-label">Search Volume</label>
+                        <input type="number" class="form-control" id="search_volume" name="search_volume"
+                               placeholder="e.g., 1000">
+                    </div>
+                    <div class="col-md-2">
+                        <label for="difficulty" class="form-label">Difficulty</label>
+                        <select class="form-select" id="difficulty" name="difficulty">
+                            <option value="low">Low</option>
+                            <option value="medium">Medium</option>
+                            <option value="high">High</option>
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <label for="current_rank" class="form-label">Current Rank</label>
+                        <input type="number" class="form-control" id="current_rank" name="current_rank"
+                               placeholder="e.g., 15">
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">&nbsp;</label>
+                        <button type="submit" class="btn btn-success w-100">
+                            <i class="bi bi-plus"></i> Add Keyword
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0"><i class="bi bi-lightbulb"></i> Keyword Suggestions</h5>
+            </div>
+            <div class="card-body">
+                <p class="mb-3">Based on your niche: <strong>{{ project.niche }}</strong></p>
+                <div class="row" id="keyword-suggestions">
+                    <div class="col-md-4">
+                        <h6>Long-tail Keywords:</h6>
+                        <ul class="list-group" id="longtail-list">
+                            <li class="list-group-item">
+                                <div class="d-flex justify-content-between">
+                                    <span>best {{ project.niche }} for beginners</span>
+                                    <small class="text-muted">Vol: ~1,200</small>
+                                </div>
+                            </li>
+                            <li class="list-group-item">
+                                <div class="d-flex justify-content-between">
+                                    <span>affordable {{ project.niche }} services</span>
+                                    <small class="text-muted">Vol: ~800</small>
+                                </div>
+                            </li>
+                            <li class="list-group-item">
+                                <div class="d-flex justify-content-between">
+                                    <span>{{ project.niche }} near me</span>
+                                    <small class="text-muted">Vol: ~2,500</small>
+                                </div>
+                            </li>
+                            <li class="list-group-item">
+                                <div class="d-flex justify-content-between">
+                                    <span>top rated {{ project.niche }} reviews</span>
+                                    <small class="text-muted">Vol: ~600</small>
+                                </div>
+                            </li>
+                        </ul>
+                    </div>
+                    <div class="col-md-4">
+                        <h6>Question Keywords:</h6>
+                        <ul class="list-group" id="question-list">
+                            <li class="list-group-item">
+                                <div class="d-flex justify-content-between">
+                                    <span>what is {{ project.niche }}</span>
+                                    <small class="text-muted">Vol: ~1,500</small>
+                                </div>
+                            </li>
+                            <li class="list-group-item">
+                                <div class="d-flex justify-content-between">
+                                    <span>how does {{ project.niche }} work</span>
+                                    <small class="text-muted">Vol: ~900</small>
+                                </div>
+                            </li>
+                            <li class="list-group-item">
+                                <div class="d-flex justify-content-between">
+                                    <span>why choose {{ project.niche }}</span>
+                                    <small class="text-muted">Vol: ~700</small>
+                                </div>
+                            </li>
+                            <li class="list-group-item">
+                                <div class="d-flex justify-content-between">
+                                    <span>how much does {{ project.niche }} cost</span>
+                                    <small class="text-muted">Vol: ~1,100</small>
+                                </div>
+                            </li>
+                        </ul>
+                    </div>
+                    <div class="col-md-4">
+                        <h6>Buying Intent:</h6>
+                        <ul class="list-group" id="buying-list">
+                            <li class="list-group-item">
+                                <div class="d-flex justify-content-between">
+                                    <span>buy {{ project.niche }} online</span>
+                                    <small class="text-muted">Vol: ~3,200</small>
+                                </div>
+                            </li>
+                            <li class="list-group-item">
+                                <div class="d-flex justify-content-between">
+                                    <span>{{ project.niche }} for sale</span>
+                                    <small class="text-muted">Vol: ~2,800</small>
+                                </div>
+                            </li>
+                            <li class="list-group-item">
+                                <div class="d-flex justify-content-between">
+                                    <span>{{ project.niche }} discount code</span>
+                                    <small class="text-muted">Vol: ~1,900</small>
+                                </div>
+                            </li>
+                            <li class="list-group-item">
+                                <div class="d-flex justify-content-between">
+                                    <span>best {{ project.niche }} deals</span>
+                                    <small class="text-muted">Vol: ~2,100</small>
+                                </div>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="alert alert-info mt-3">
+                    <i class="bi bi-info-circle"></i> <strong>Note:</strong> Search volumes are estimates based on keyword patterns. Click any keyword to quickly add it to your tracking list.
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0"><i class="bi bi-list"></i> Your Keywords</h5>
+            </div>
+            <div class="card-body">
+                {% if keywords %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Keyword</th>
+                                    <th>Search Volume</th>
+                                    <th>Difficulty</th>
+                                    <th>Current Rank</th>
+                                    <th>Added</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for keyword in keywords %}
+                                <tr>
+                                    <td><strong>{{ keyword.keyword }}</strong></td>
+                                    <td>{{ keyword.search_volume or 'N/A' }}</td>
+                                    <td>
+                                        <span class="badge keyword-difficulty-{{ keyword.difficulty or 'low' }}">
+                                            {{ keyword.difficulty or 'Low' }}
+                                        </span>
+                                    </td>
+                                    <td>{{ keyword.current_rank or 'Not ranked' }}</td>
+                                    <td>{{ keyword.created_at.strftime('%Y-%m-%d') }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <div class="text-center py-5">
+                        <i class="bi bi-key" style="font-size: 4rem; color: #ccc;"></i>
+                        <p class="mt-3 text-muted">No keywords tracked yet. Add your first keyword above!</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

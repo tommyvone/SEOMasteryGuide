@@ -1,0 +1,265 @@
+{% extends "base.html" %}
+
+{% block title %}Edit {{ page.title }} - {{ project.name }}{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-md-12">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{{ url_for('dashboard') }}">Dashboard</a></li>
+                <li class="breadcrumb-item"><a href="{{ url_for('project_detail', project_id=project.id) }}">{{ project.name }}</a></li>
+                <li class="breadcrumb-item"><a href="{{ url_for('pages', project_id=project.id) }}">Pages</a></li>
+                <li class="breadcrumb-item active">{{ page.title }}</li>
+            </ol>
+        </nav>
+        <h1><i class="bi bi-pencil"></i> Edit Page: {{ page.title }}</h1>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-8">
+        <div class="card mb-4">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0">Content Editor</h5>
+            </div>
+            <div class="card-body">
+                <form method="POST">
+                    <div class="mb-3">
+                        <label for="title" class="form-label">Page Title *</label>
+                        <input type="text" class="form-control" id="title" name="title" 
+                               value="{{ page.title }}" required>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="page_type" class="form-label">Page Type</label>
+                        <select class="form-select" id="page_type" name="page_type">
+                            <option value="home" {% if page.page_type == 'home' %}selected{% endif %}>Home</option>
+                            <option value="about" {% if page.page_type == 'about' %}selected{% endif %}>About</option>
+                            <option value="services" {% if page.page_type == 'services' %}selected{% endif %}>Services/Products</option>
+                            <option value="blog" {% if page.page_type == 'blog' %}selected{% endif %}>Blog</option>
+                            <option value="contact" {% if page.page_type == 'contact' %}selected{% endif %}>Contact</option>
+                            <option value="privacy" {% if page.page_type == 'privacy' %}selected{% endif %}>Privacy Policy</option>
+                            <option value="terms" {% if page.page_type == 'terms' %}selected{% endif %}>Terms of Service</option>
+                            <option value="other" {% if page.page_type == 'other' %}selected{% endif %}>Other</option>
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="slug" class="form-label">URL Slug *</label>
+                        <input type="text" class="form-control" id="slug" name="slug" 
+                               value="{{ page.slug }}" required>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="meta_title" class="form-label">Meta Title (SEO Title) *</label>
+                        <input type="text" class="form-control" id="meta_title" name="meta_title"
+                               value="{{ page.meta_title or '' }}" maxlength="60">
+                        <div class="form-text">
+                            <span id="meta_title_count">{{ (page.meta_title or '')|length }}</span>/60 characters
+                            <span id="meta_title_feedback"></span>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="meta_description" class="form-label">Meta Description *</label>
+                        <textarea class="form-control" id="meta_description" name="meta_description" 
+                                  rows="3" maxlength="160">{{ page.meta_description or '' }}</textarea>
+                        <div class="form-text">
+                            <span id="meta_desc_count">{{ (page.meta_description or '')|length }}</span>/160 characters
+                            <span id="meta_desc_feedback"></span>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="h1_tag" class="form-label">H1 Heading</label>
+                        <input type="text" class="form-control" id="h1_tag" name="h1_tag" 
+                               value="{{ page.h1_tag or '' }}">
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="content" class="form-label">Page Content *</label>
+                        <textarea class="form-control seo-editor" id="content" name="content" 
+                                  rows="15">{{ page.content or '' }}</textarea>
+                        <div class="form-text">
+                            Word count: <span id="word_count">0</span> (Recommended: 300+)
+                        </div>
+                    </div>
+
+                    <div class="d-grid gap-2">
+                        <button type="submit" class="btn btn-primary btn-lg">
+                            <i class="bi bi-save"></i> Save Changes
+                        </button>
+                        <a href="{{ url_for('pages', project_id=project.id) }}" class="btn btn-outline-secondary">
+                            Back to Pages
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <div class="seo-score-panel">
+            <div class="card mb-3">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0"><i class="bi bi-speedometer"></i> SEO Score</h5>
+                </div>
+                <div class="card-body text-center">
+                    <div class="seo-score-badge">
+                        <span id="current_score" class="text-success">{{ page.seo_score }}%</span>
+                    </div>
+                    <div class="progress mt-3" style="height: 30px;">
+                        <div id="score_bar" class="progress-bar bg-success" style="width: {{ page.seo_score }}%;"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <h6 class="mb-0"><i class="bi bi-list-check"></i> SEO Checklist</h6>
+                </div>
+                <div class="card-body" id="seo_suggestions">
+                    <ul class="list-unstyled mb-0">
+                        <li class="mb-2" id="check-title">
+                            <i class="bi bi-circle text-muted"></i> <span>Meta title (30-60 chars)</span>
+                        </li>
+                        <li class="mb-2" id="check-meta">
+                            <i class="bi bi-circle text-muted"></i> <span>Meta description (120-160 chars)</span>
+                        </li>
+                        <li class="mb-2" id="check-h1">
+                            <i class="bi bi-circle text-muted"></i> <span>H1 heading tag</span>
+                        </li>
+                        <li class="mb-2" id="check-content">
+                            <i class="bi bi-circle text-muted"></i> <span>Content (300+ words)</span>
+                        </li>
+                        <li class="mb-2" id="check-slug">
+                            <i class="bi bi-circle text-muted"></i> <span>Clean URL slug</span>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="card mt-3">
+                <div class="card-header">
+                    <h6 class="mb-0"><i class="bi bi-lightbulb"></i> SEO Tips</h6>
+                </div>
+                <div class="card-body">
+                    <ul class="small">
+                        <li>Include your main keyword in the title</li>
+                        <li>Write compelling meta descriptions</li>
+                        <li>Use headers (H1, H2, H3) to structure content</li>
+                        <li>Add internal links to other pages</li>
+                        <li>Keep URLs short and descriptive</li>
+                        <li>Optimize images with alt text</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function updateSEOScore() {
+    var title = $('#meta_title').val();
+    var meta = $('#meta_description').val();
+    var content = $('#content').val();
+    
+    var titleLen = title.length;
+    var metaLen = meta.length;
+    var wordCount = content.trim() ? content.trim().split(/\s+/).length : 0;
+    
+    $('#word_count').text(wordCount);
+    $('#meta_title_count').text(titleLen);
+    $('#meta_desc_count').text(metaLen);
+    
+    if (titleLen >= 30 && titleLen <= 60) {
+        $('#meta_title_feedback').html('<span class="text-success ms-2">✓ Optimal</span>');
+    } else if (titleLen > 0) {
+        $('#meta_title_feedback').html('<span class="text-warning ms-2">⚠ Needs improvement</span>');
+    } else {
+        $('#meta_title_feedback').html('<span class="text-danger ms-2">✗ Required</span>');
+    }
+    
+    if (metaLen >= 120 && metaLen <= 160) {
+        $('#meta_desc_feedback').html('<span class="text-success ms-2">✓ Optimal</span>');
+    } else if (metaLen > 0) {
+        $('#meta_desc_feedback').html('<span class="text-warning ms-2">⚠ Needs improvement</span>');
+    } else {
+        $('#meta_desc_feedback').html('<span class="text-danger ms-2">✗ Required</span>');
+    }
+    
+    var score = 0;
+    if (titleLen >= 30 && titleLen <= 60) score += 20;
+    if (metaLen >= 120 && metaLen <= 160) score += 20;
+    if ($('#h1_tag').val()) score += 20;
+    if (wordCount >= 300) score += 20;
+    if ($('#slug').val().includes('/')) score += 20;
+    
+    $('#current_score').text(score + '%');
+    $('#score_bar').css('width', score + '%');
+    
+    if (score >= 70) {
+        $('#current_score').removeClass('text-warning text-danger').addClass('text-success');
+        $('#score_bar').removeClass('bg-warning bg-danger').addClass('bg-success');
+    } else if (score >= 40) {
+        $('#current_score').removeClass('text-success text-danger').addClass('text-warning');
+        $('#score_bar').removeClass('bg-success bg-danger').addClass('bg-warning');
+    } else {
+        $('#current_score').removeClass('text-success text-warning').addClass('text-danger');
+        $('#score_bar').removeClass('bg-success bg-warning').addClass('bg-danger');
+    }
+    
+    $('#check-title i').removeClass('bi-circle bi-check-circle-fill bi-x-circle-fill text-success text-danger text-muted');
+    if (titleLen >= 30 && titleLen <= 60) {
+        $('#check-title i').addClass('bi-check-circle-fill text-success');
+    } else if (titleLen > 0) {
+        $('#check-title i').addClass('bi-circle text-warning');
+    } else {
+        $('#check-title i').addClass('bi-x-circle-fill text-danger');
+    }
+    
+    $('#check-meta i').removeClass('bi-circle bi-check-circle-fill bi-x-circle-fill text-success text-danger text-muted');
+    if (metaLen >= 120 && metaLen <= 160) {
+        $('#check-meta i').addClass('bi-check-circle-fill text-success');
+    } else if (metaLen > 0) {
+        $('#check-meta i').addClass('bi-circle text-warning');
+    } else {
+        $('#check-meta i').addClass('bi-x-circle-fill text-danger');
+    }
+    
+    $('#check-h1 i').removeClass('bi-circle bi-check-circle-fill bi-x-circle-fill text-success text-danger text-muted');
+    if ($('#h1_tag').val()) {
+        $('#check-h1 i').addClass('bi-check-circle-fill text-success');
+    } else {
+        $('#check-h1 i').addClass('bi-x-circle-fill text-danger');
+    }
+    
+    $('#check-content i').removeClass('bi-circle bi-check-circle-fill bi-x-circle-fill text-success text-danger text-muted');
+    if (wordCount >= 300) {
+        $('#check-content i').addClass('bi-check-circle-fill text-success');
+    } else if (wordCount > 0) {
+        $('#check-content i').addClass('bi-circle text-warning');
+    } else {
+        $('#check-content i').addClass('bi-x-circle-fill text-danger');
+    }
+    
+    $('#check-slug i').removeClass('bi-circle bi-check-circle-fill bi-x-circle-fill text-success text-danger text-muted');
+    if ($('#slug').val().includes('/')) {
+        $('#check-slug i').addClass('bi-check-circle-fill text-success');
+    } else {
+        $('#check-slug i').addClass('bi-circle text-warning');
+    }
+}
+
+$(document).ready(function() {
+    updateSEOScore();
+    
+    $('#meta_title, #meta_description, #content, #h1_tag, #slug').on('input', function() {
+        updateSEOScore();
+    });
+});
+</script>
+{% endblock %}

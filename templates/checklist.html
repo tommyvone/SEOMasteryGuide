@@ -1,0 +1,212 @@
+{% extends "base.html" %}
+
+{% block title %}SEO Checklist - {{ project.name }}{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-md-12">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{{ url_for('dashboard') }}">Dashboard</a></li>
+                <li class="breadcrumb-item"><a href="{{ url_for('project_detail', project_id=project.id) }}">{{ project.name }}</a></li>
+                <li class="breadcrumb-item active">SEO Checklist</li>
+            </ol>
+        </nav>
+        <h1><i class="bi bi-check2-square"></i> SEO Optimization Checklist</h1>
+        <p class="text-muted">Track your progress through the 14-step SEO process</p>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-body text-center">
+                <h3>Overall Progress</h3>
+                <div class="seo-score-badge mb-3">
+                    <span class="{% if checklist.get_completion_percentage() >= 70 %}text-success{% elif checklist.get_completion_percentage() >= 40 %}text-warning{% else %}text-danger{% endif %}">
+                        {{ checklist.get_completion_percentage() }}%
+                    </span>
+                </div>
+                <div class="progress" style="height: 40px;">
+                    <div class="progress-bar {% if checklist.get_completion_percentage() >= 70 %}bg-success{% elif checklist.get_completion_percentage() >= 40 %}bg-warning{% else %}bg-danger{% endif %}" 
+                         style="width: {{ checklist.get_completion_percentage() }}%;">
+                        {{ checklist.get_completion_percentage() }}% Complete
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<form method="POST">
+    <div class="row">
+        <div class="col-md-6">
+            <div class="checklist-item {% if checklist.domain_selected %}completed{% endif %}">
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" name="domain_selected" id="domain_selected"
+                           {% if checklist.domain_selected %}checked{% endif %}>
+                    <label class="form-check-label" for="domain_selected">
+                        <h5><i class="bi bi-1-circle"></i> Domain Name Selected</h5>
+                        <p class="text-muted mb-0">Choose a short, memorable, keyword-rich domain (.com preferred)</p>
+                    </label>
+                </div>
+            </div>
+
+            <div class="checklist-item {% if checklist.hosting_setup %}completed{% endif %}">
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" name="hosting_setup" id="hosting_setup"
+                           {% if checklist.hosting_setup %}checked{% endif %}>
+                    <label class="form-check-label" for="hosting_setup">
+                        <h5><i class="bi bi-2-circle"></i> Hosting Provider Setup</h5>
+                        <p class="text-muted mb-0">Fast load times, uptime guarantees</p>
+                    </label>
+                </div>
+            </div>
+
+            <div class="checklist-item {% if checklist.ssl_installed %}completed{% endif %}">
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" name="ssl_installed" id="ssl_installed"
+                           {% if checklist.ssl_installed %}checked{% endif %}>
+                    <label class="form-check-label" for="ssl_installed">
+                        <h5><i class="bi bi-3-circle"></i> SSL Certificate Installed</h5>
+                        <p class="text-muted mb-0">HTTPS is essential for SEO and security</p>
+                    </label>
+                </div>
+            </div>
+
+            <div class="checklist-item {% if checklist.core_pages_created %}completed{% endif %}">
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" name="core_pages_created" id="core_pages_created"
+                           {% if checklist.core_pages_created %}checked{% endif %}>
+                    <label class="form-check-label" for="core_pages_created">
+                        <h5><i class="bi bi-4-circle"></i> Core Pages Created</h5>
+                        <p class="text-muted mb-0">Home, About, Services, Blog, Contact, Privacy</p>
+                    </label>
+                </div>
+            </div>
+
+            <div class="checklist-item {% if checklist.keyword_research_done %}completed{% endif %}">
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" name="keyword_research_done" id="keyword_research_done"
+                           {% if checklist.keyword_research_done %}checked{% endif %}>
+                    <label class="form-check-label" for="keyword_research_done">
+                        <h5><i class="bi bi-5-circle"></i> Keyword Research Completed</h5>
+                        <p class="text-muted mb-0">Long-tail keywords with low competition identified</p>
+                    </label>
+                </div>
+            </div>
+
+            <div class="checklist-item {% if checklist.content_optimized %}completed{% endif %}">
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" name="content_optimized" id="content_optimized"
+                           {% if checklist.content_optimized %}checked{% endif %}>
+                    <label class="form-check-label" for="content_optimized">
+                        <h5><i class="bi bi-6-circle"></i> Content Created & Optimized</h5>
+                        <p class="text-muted mb-0">High-quality content with natural keyword placement</p>
+                    </label>
+                </div>
+            </div>
+
+            <div class="checklist-item {% if checklist.meta_tags_set %}completed{% endif %}">
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" name="meta_tags_set" id="meta_tags_set"
+                           {% if checklist.meta_tags_set %}checked{% endif %}>
+                    <label class="form-check-label" for="meta_tags_set">
+                        <h5><i class="bi bi-7-circle"></i> Meta Tags Optimized</h5>
+                        <p class="text-muted mb-0">Title tags, meta descriptions, headers properly set</p>
+                    </label>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6">
+            <div class="checklist-item {% if checklist.images_optimized %}completed{% endif %}">
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" name="images_optimized" id="images_optimized"
+                           {% if checklist.images_optimized %}checked{% endif %}>
+                    <label class="form-check-label" for="images_optimized">
+                        <h5><i class="bi bi-8-circle"></i> Images Optimized</h5>
+                        <p class="text-muted mb-0">Compressed images with proper alt text</p>
+                    </label>
+                </div>
+            </div>
+
+            <div class="checklist-item {% if checklist.site_speed_optimized %}completed{% endif %}">
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" name="site_speed_optimized" id="site_speed_optimized"
+                           {% if checklist.site_speed_optimized %}checked{% endif %}>
+                    <label class="form-check-label" for="site_speed_optimized">
+                        <h5><i class="bi bi-9-circle"></i> Site Speed Optimized</h5>
+                        <p class="text-muted mb-0">Caching, minification, fast loading times</p>
+                    </label>
+                </div>
+            </div>
+
+            <div class="checklist-item {% if checklist.mobile_friendly %}completed{% endif %}">
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" name="mobile_friendly" id="mobile_friendly"
+                           {% if checklist.mobile_friendly %}checked{% endif %}>
+                    <label class="form-check-label" for="mobile_friendly">
+                        <h5><i class="bi bi-shield-check"></i> Mobile-Friendly Design</h5>
+                        <p class="text-muted mb-0">Responsive design tested on mobile devices</p>
+                    </label>
+                </div>
+            </div>
+
+            <div class="checklist-item {% if checklist.analytics_setup %}completed{% endif %}">
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" name="analytics_setup" id="analytics_setup"
+                           {% if checklist.analytics_setup %}checked{% endif %}>
+                    <label class="form-check-label" for="analytics_setup">
+                        <h5><i class="bi bi-bar-chart"></i> Google Analytics Setup</h5>
+                        <p class="text-muted mb-0">Tracking code installed and configured</p>
+                    </label>
+                </div>
+            </div>
+
+            <div class="checklist-item {% if checklist.search_console_setup %}completed{% endif %}">
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" name="search_console_setup" id="search_console_setup"
+                           {% if checklist.search_console_setup %}checked{% endif %}>
+                    <label class="form-check-label" for="search_console_setup">
+                        <h5><i class="bi bi-search"></i> Search Console Setup</h5>
+                        <p class="text-muted mb-0">Property verified and monitoring active</p>
+                    </label>
+                </div>
+            </div>
+
+            <div class="checklist-item {% if checklist.sitemap_submitted %}completed{% endif %}">
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" name="sitemap_submitted" id="sitemap_submitted"
+                           {% if checklist.sitemap_submitted %}checked{% endif %}>
+                    <label class="form-check-label" for="sitemap_submitted">
+                        <h5><i class="bi bi-diagram-3"></i> Sitemap Submitted</h5>
+                        <p class="text-muted mb-0">XML sitemap submitted to Search Console</p>
+                    </label>
+                </div>
+            </div>
+
+            <div class="checklist-item {% if checklist.backlinks_started %}completed{% endif %}">
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" name="backlinks_started" id="backlinks_started"
+                           {% if checklist.backlinks_started %}checked{% endif %}>
+                    <label class="form-check-label" for="backlinks_started">
+                        <h5><i class="bi bi-link-45deg"></i> Backlink Building Started</h5>
+                        <p class="text-muted mb-0">Guest posts, directories, collaborations initiated</p>
+                    </label>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mt-4">
+        <div class="col-md-12">
+            <div class="d-grid">
+                <button type="submit" class="btn btn-primary btn-lg">
+                    <i class="bi bi-save"></i> Save Progress
+                </button>
+            </div>
+        </div>
+    </div>
+</form>
+{% endblock %}

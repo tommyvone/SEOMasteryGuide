@@ -1,0 +1,156 @@
+{% extends "base.html" %}
+
+{% block title %}Backlinks - {{ project.name }}{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-md-12">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{{ url_for('dashboard') }}">Dashboard</a></li>
+                <li class="breadcrumb-item"><a href="{{ url_for('project_detail', project_id=project.id) }}">{{ project.name }}</a></li>
+                <li class="breadcrumb-item active">Backlinks</li>
+            </ol>
+        </nav>
+        <h1><i class="bi bi-link-45deg"></i> Backlink Manager</h1>
+        <p class="text-muted">Track and manage your backlinks for {{ project.name }}</p>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header bg-success text-white">
+                <h5 class="mb-0"><i class="bi bi-plus-circle"></i> Add New Backlink</h5>
+            </div>
+            <div class="card-body">
+                <form method="POST" action="{{ url_for('add_backlink', project_id=project.id) }}" class="row g-3">
+                    <div class="col-md-3">
+                        <label for="source_url" class="form-label">Source URL *</label>
+                        <input type="url" class="form-control" id="source_url" name="source_url" required
+                               placeholder="https://linking-site.com/page">
+                    </div>
+                    <div class="col-md-3">
+                        <label for="target_url" class="form-label">Target URL *</label>
+                        <input type="url" class="form-control" id="target_url" name="target_url" required
+                               placeholder="https://yoursite.com/page">
+                    </div>
+                    <div class="col-md-2">
+                        <label for="anchor_text" class="form-label">Anchor Text</label>
+                        <input type="text" class="form-control" id="anchor_text" name="anchor_text"
+                               placeholder="Click here">
+                    </div>
+                    <div class="col-md-2">
+                        <label for="domain_authority" class="form-label">Domain Authority</label>
+                        <input type="number" class="form-control" id="domain_authority" name="domain_authority"
+                               placeholder="0-100" min="0" max="100">
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label">&nbsp;</label>
+                        <button type="submit" class="btn btn-success w-100">
+                            <i class="bi bi-plus"></i> Add
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0"><i class="bi bi-lightbulb"></i> Backlink Building Strategies</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-4">
+                        <h6><i class="bi bi-1-circle"></i> Guest Blogging</h6>
+                        <p class="small">Write quality articles for relevant blogs in your niche</p>
+                    </div>
+                    <div class="col-md-4">
+                        <h6><i class="bi bi-2-circle"></i> Directory Listings</h6>
+                        <p class="small">Submit your site to quality business directories</p>
+                    </div>
+                    <div class="col-md-4">
+                        <h6><i class="bi bi-3-circle"></i> Broken Link Building</h6>
+                        <p class="small">Find broken links and suggest your content as replacement</p>
+                    </div>
+                    <div class="col-md-4">
+                        <h6><i class="bi bi-4-circle"></i> Resource Pages</h6>
+                        <p class="small">Get listed on resource/links pages in your industry</p>
+                    </div>
+                    <div class="col-md-4">
+                        <h6><i class="bi bi-5-circle"></i> Influencer Outreach</h6>
+                        <p class="small">Collaborate with influencers and industry leaders</p>
+                    </div>
+                    <div class="col-md-4">
+                        <h6><i class="bi bi-6-circle"></i> Content Marketing</h6>
+                        <p class="small">Create shareable content that naturally attracts links</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0"><i class="bi bi-list"></i> Your Backlinks</h5>
+            </div>
+            <div class="card-body">
+                {% if backlinks %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Source URL</th>
+                                    <th>Target URL</th>
+                                    <th>Anchor Text</th>
+                                    <th>DA</th>
+                                    <th>Status</th>
+                                    <th>Added</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for backlink in backlinks %}
+                                <tr>
+                                    <td><a href="{{ backlink.source_url }}" target="_blank" class="text-truncate d-block" style="max-width: 200px;">
+                                        {{ backlink.source_url }}
+                                    </a></td>
+                                    <td><span class="text-truncate d-block" style="max-width: 200px;">{{ backlink.target_url }}</span></td>
+                                    <td>{{ backlink.anchor_text or 'N/A' }}</td>
+                                    <td>
+                                        {% if backlink.domain_authority %}
+                                            <span class="badge {% if backlink.domain_authority >= 50 %}bg-success{% elif backlink.domain_authority >= 30 %}bg-warning{% else %}bg-secondary{% endif %}">
+                                                {{ backlink.domain_authority }}
+                                            </span>
+                                        {% else %}
+                                            N/A
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <span class="badge {% if backlink.status == 'active' %}bg-success{% elif backlink.status == 'pending' %}bg-warning{% else %}bg-secondary{% endif %}">
+                                            {{ backlink.status }}
+                                        </span>
+                                    </td>
+                                    <td>{{ backlink.created_at.strftime('%Y-%m-%d') }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <div class="text-center py-5">
+                        <i class="bi bi-link-45deg" style="font-size: 4rem; color: #ccc;"></i>
+                        <p class="mt-3 text-muted">No backlinks tracked yet. Start building your link profile!</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

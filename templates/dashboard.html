@@ -1,0 +1,99 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - SEO Website Builder{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-md-12">
+        <h1>SEO Dashboard</h1>
+        <p class="text-muted">Track your projects and overall SEO performance</p>
+    </div>
+</div>
+
+<div class="row g-4 mb-4">
+    <div class="col-md-3">
+        <div class="stat-card">
+            <h6>Total Projects</h6>
+            <div class="stat-number">{{ stats.total_projects }}</div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="stat-card">
+            <h6>Total Pages</h6>
+            <div class="stat-number">{{ stats.total_pages }}</div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="stat-card">
+            <h6>Keywords Tracked</h6>
+            <div class="stat-number">{{ stats.total_keywords }}</div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="stat-card">
+            <h6>Avg SEO Score</h6>
+            <div class="stat-number">{{ stats.avg_seo_score }}%</div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0"><i class="bi bi-folder"></i> All Projects</h5>
+            </div>
+            <div class="card-body">
+                {% if projects %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Project Name</th>
+                                    <th>Niche</th>
+                                    <th>Domain</th>
+                                    <th>SEO Score</th>
+                                    <th>Created</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for project in projects %}
+                                <tr>
+                                    <td><strong>{{ project.name }}</strong></td>
+                                    <td>{{ project.niche or 'N/A' }}</td>
+                                    <td>{{ project.domain or 'N/A' }}</td>
+                                    <td>
+                                        <div class="progress" style="height: 20px; width: 150px;">
+                                            <div class="progress-bar {% if project.seo_score >= 70 %}bg-success{% elif project.seo_score >= 40 %}bg-warning{% else %}bg-danger{% endif %}" 
+                                                 role="progressbar" style="width: {{ project.seo_score }}%;">
+                                                {{ project.seo_score }}%
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td>{{ project.created_at.strftime('%Y-%m-%d') }}</td>
+                                    <td>
+                                        <a href="{{ url_for('project_detail', project_id=project.id) }}" 
+                                           class="btn btn-sm btn-primary">
+                                            <i class="bi bi-eye"></i> View
+                                        </a>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <div class="text-center py-5">
+                        <i class="bi bi-folder-x" style="font-size: 4rem; color: #ccc;"></i>
+                        <p class="mt-3 text-muted">No projects yet. Create your first project to get started!</p>
+                        <a href="{{ url_for('new_project') }}" class="btn btn-primary">
+                            <i class="bi bi-plus-circle"></i> Create Project
+                        </a>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
