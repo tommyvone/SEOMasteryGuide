@@ -1,284 +1,306 @@
-from flask import Flask, render_template, request, redirect, url_for, jsonify, flash
-from datetime import datetime
+from flask import Flask, render_template, request, redirect, url_for, jsonify, flash, session
+from datetime import datetime, timedelta
+from functools import wraps
 import os
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = os.environ.get('SESSION_SECRET', 'dev-secret-key-change-in-production')
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///seo_platform.db'
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///seo_agency.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
-from models import db, Project, Page, Keyword, SEOChecklist, Backlink
+from models import db, User, ServicePackage, Client, Deliverable, Invoice, Payment, SEOMetric, TrackedKeyword
 
 db.init_app(app)
 
 with app.app_context():
     db.create_all()
+    
+    if not ServicePackage.query.first():
+        basic = ServicePackage(
+            name='Basic SEO',
+            description='Perfect for small businesses starting with SEO',
+            monthly_price=299.00,
+            features='10 Keywords Tracked, 5 Pages Optimized, 5 Backlinks/Month, Monthly Report',
+            keywords_tracked=10,
+            pages_optimized=5,
+            backlinks_monthly=5,
+            monthly_reports=1
+        )
+        standard = ServicePackage(
+            name='Standard SEO',
+            description='Ideal for growing businesses',
+            monthly_price=599.00,
+            features='25 Keywords Tracked, 15 Pages Optimized, 15 Backlinks/Month, Bi-weekly Reports',
+            keywords_tracked=25,
+            pages_optimized=15,
+            backlinks_monthly=15,
+            monthly_reports=2
+        )
+        premium = ServicePackage(
+            name='Premium SEO',
+            description='Comprehensive SEO for established businesses',
+            monthly_price=1299.00,
+            features='50 Keywords Tracked, 30 Pages Optimized, 30 Backlinks/Month, Weekly Reports, Dedicated Manager',
+            keywords_tracked=50,
+            pages_optimized=30,
+            backlinks_monthly=30,
+            monthly_reports=4
+        )
+        db.session.add_all([basic, standard, premium])
+        
+        admin = User(email='admin@seoagency.com', name='Admin User', role='admin')
+        admin.set_password('admin123')
+        db.session.add(admin)
+        
+        db.session.commit()
+
+def login_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if 'user_id' not in session:
+            flash('Please login to access this page', 'warning')
+            return redirect(url_for('login'))
+        return f(*args, **kwargs)
+    return decorated_function
+
+def admin_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if 'user_id' not in session:
+            return redirect(url_for('login'))
+        user = User.query.get(session['user_id'])
+        if not user or user.role != 'admin':
+            flash('Admin access required', 'danger')
+            return redirect(url_for('index'))
+        return f(*args, **kwargs)
+    return decorated_function
 
 @app.route('/')
 def index():
-    projects = Project.query.all()
-    return render_template('index.html', projects=projects)
+    packages = ServicePackage.query.filter_by(is_active=True).all()
+    return render_template('index.html', packages=packages)
 
-@app.route('/dashboard')
-def dashboard():
-    projects = Project.query.all()
-    total_projects = len(projects)
-    total_pages = Page.query.count()
-    total_keywords = Keyword.query.count()
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    if request.method == 'POST':
+        email = request.form.get('email')
+        password = request.form.get('password')
+        user = User.query.filter_by(email=email).first()
+        
+        if user and user.check_password(password):
+            session['user_id'] = user.id
+            session['user_role'] = user.role
+            session['user_name'] = user.name
+            
+            if user.role == 'admin':
+                return redirect(url_for('admin_dashboard'))
+            else:
+                return redirect(url_for('client_dashboard'))
+        else:
+            flash('Invalid email or password', 'danger')
+    
+    return render_template('login.html')
+
+@app.route('/logout')
+def logout():
+    session.clear()
+    flash('Logged out successfully', 'success')
+    return redirect(url_for('index'))
+
+@app.route('/admin/dashboard')
+@admin_required
+def admin_dashboard():
+    total_clients = Client.query.count()
+    active_clients = Client.query.filter_by(status='active').count()
+    total_revenue = db.session.query(db.func.sum(Invoice.amount)).filter(
+        Invoice.status == 'paid'
+    ).scalar() or 0
+    
+    pending_deliverables = Deliverable.query.filter_by(status='pending').count()
+    
+    recent_clients = Client.query.order_by(Client.created_at.desc()).limit(5).all()
+    pending_invoices = Invoice.query.filter_by(status='unpaid').order_by(Invoice.due_date).limit(5).all()
     
     stats = {
-        'total_projects': total_projects,
-        'total_pages': total_pages,
-        'total_keywords': total_keywords,
-        'avg_seo_score': 0
+        'total_clients': total_clients,
+        'active_clients': active_clients,
+        'total_revenue': total_revenue,
+        'pending_deliverables': pending_deliverables
     }
     
-    if total_projects > 0:
-        total_score = sum([p.seo_score or 0 for p in projects])
-        stats['avg_seo_score'] = int(total_score / total_projects)
-    
-    return render_template('dashboard.html', projects=projects, stats=stats)
+    return render_template('admin/dashboard.html', stats=stats, recent_clients=recent_clients, 
+                         pending_invoices=pending_invoices)
 
-@app.route('/project/new', methods=['GET', 'POST'])
-def new_project():
+@app.route('/admin/clients')
+@admin_required
+def admin_clients():
+    clients = Client.query.join(User).order_by(Client.created_at.desc()).all()
+    return render_template('admin/clients.html', clients=clients)
+
+@app.route('/admin/client/<int:client_id>')
+@admin_required
+def admin_client_detail(client_id):
+    client = Client.query.get_or_404(client_id)
+    deliverables = Deliverable.query.filter_by(client_id=client_id).order_by(Deliverable.created_at.desc()).all()
+    invoices = Invoice.query.filter_by(client_id=client_id).order_by(Invoice.issue_date.desc()).all()
+    metrics = SEOMetric.query.filter_by(client_id=client_id).order_by(SEOMetric.metric_date.desc()).limit(12).all()
+    keywords = TrackedKeyword.query.filter_by(client_id=client_id).all()
+    
+    return render_template('admin/client_detail.html', client=client, deliverables=deliverables,
+                         invoices=invoices, metrics=metrics, keywords=keywords)
+
+@app.route('/admin/client/new', methods=['GET', 'POST'])
+@admin_required
+def admin_new_client():
     if request.method == 'POST':
-        project = Project(
+        user = User(
+            email=request.form.get('email'),
             name=request.form.get('name'),
-            niche=request.form.get('niche'),
-            domain=request.form.get('domain'),
-            target_keywords=request.form.get('target_keywords'),
-            description=request.form.get('description')
+            role='client'
         )
-        db.session.add(project)
-        db.session.commit()
+        user.set_password(request.form.get('password'))
+        db.session.add(user)
+        db.session.flush()
         
-        checklist = SEOChecklist(project_id=project.id)
-        db.session.add(checklist)
-        db.session.commit()
-        
-        flash('Project created successfully!', 'success')
-        return redirect(url_for('project_detail', project_id=project.id))
-    
-    return render_template('new_project.html')
-
-@app.route('/project/<int:project_id>')
-def project_detail(project_id):
-    project = Project.query.get_or_404(project_id)
-    pages = Page.query.filter_by(project_id=project_id).all()
-    keywords = Keyword.query.filter_by(project_id=project_id).all()
-    checklist = SEOChecklist.query.filter_by(project_id=project_id).first()
-    
-    if not checklist:
-        checklist = SEOChecklist(project_id=project_id)
-        db.session.add(checklist)
-        db.session.commit()
-    
-    return render_template('project_detail.html', 
-                         project=project, 
-                         pages=pages, 
-                         keywords=keywords,
-                         checklist=checklist)
-
-@app.route('/project/<int:project_id>/keywords')
-def keywords(project_id):
-    project = Project.query.get_or_404(project_id)
-    keywords = Keyword.query.filter_by(project_id=project_id).all()
-    return render_template('keywords.html', project=project, keywords=keywords)
-
-@app.route('/project/<int:project_id>/keyword/add', methods=['POST'])
-def add_keyword(project_id):
-    keyword = Keyword(
-        project_id=project_id,
-        keyword=request.form.get('keyword'),
-        search_volume=request.form.get('search_volume', type=int),
-        difficulty=request.form.get('difficulty'),
-        current_rank=request.form.get('current_rank', type=int)
-    )
-    db.session.add(keyword)
-    db.session.commit()
-    flash('Keyword added successfully!', 'success')
-    return redirect(url_for('keywords', project_id=project_id))
-
-@app.route('/project/<int:project_id>/pages')
-def pages(project_id):
-    project = Project.query.get_or_404(project_id)
-    pages = Page.query.filter_by(project_id=project_id).all()
-    return render_template('pages.html', project=project, pages=pages)
-
-@app.route('/project/<int:project_id>/page/new', methods=['GET', 'POST'])
-def new_page(project_id):
-    project = Project.query.get_or_404(project_id)
-    
-    if request.method == 'POST':
-        page = Page(
-            project_id=project_id,
-            title=request.form.get('title'),
-            slug=request.form.get('slug'),
-            page_type=request.form.get('page_type'),
-            meta_title=request.form.get('meta_title'),
-            meta_description=request.form.get('meta_description'),
-            content=request.form.get('content', '')
+        client = Client(
+            user_id=user.id,
+            package_id=request.form.get('package_id', type=int),
+            company_name=request.form.get('company_name'),
+            website_url=request.form.get('website_url'),
+            industry=request.form.get('industry')
         )
-        db.session.add(page)
-        db.session.commit()
-        flash('Page created successfully!', 'success')
-        return redirect(url_for('edit_page', project_id=project_id, page_id=page.id))
-    
-    return render_template('new_page.html', project=project)
-
-@app.route('/project/<int:project_id>/page/<int:page_id>/edit', methods=['GET', 'POST'])
-def edit_page(project_id, page_id):
-    project = Project.query.get_or_404(project_id)
-    page = Page.query.get_or_404(page_id)
-    
-    if request.method == 'POST':
-        page.title = request.form.get('title')
-        page.slug = request.form.get('slug')
-        page.page_type = request.form.get('page_type')
-        page.meta_title = request.form.get('meta_title')
-        page.meta_description = request.form.get('meta_description')
-        page.content = request.form.get('content')
-        page.h1_tag = request.form.get('h1_tag')
-        page.updated_at = datetime.utcnow()
+        db.session.add(client)
         
-        page.seo_score = calculate_seo_score(page)
-        
-        db.session.commit()
-        flash('Page updated successfully!', 'success')
-        return redirect(url_for('edit_page', project_id=project_id, page_id=page_id))
-    
-    return render_template('edit_page.html', project=project, page=page)
-
-@app.route('/project/<int:project_id>/checklist', methods=['GET', 'POST'])
-def checklist(project_id):
-    project = Project.query.get_or_404(project_id)
-    checklist = SEOChecklist.query.filter_by(project_id=project_id).first()
-    
-    if not checklist:
-        checklist = SEOChecklist(project_id=project_id)
-        db.session.add(checklist)
-        db.session.commit()
-    
-    if request.method == 'POST':
-        checklist.domain_selected = request.form.get('domain_selected') == 'on'
-        checklist.hosting_setup = request.form.get('hosting_setup') == 'on'
-        checklist.ssl_installed = request.form.get('ssl_installed') == 'on'
-        checklist.core_pages_created = request.form.get('core_pages_created') == 'on'
-        checklist.keyword_research_done = request.form.get('keyword_research_done') == 'on'
-        checklist.content_optimized = request.form.get('content_optimized') == 'on'
-        checklist.meta_tags_set = request.form.get('meta_tags_set') == 'on'
-        checklist.images_optimized = request.form.get('images_optimized') == 'on'
-        checklist.site_speed_optimized = request.form.get('site_speed_optimized') == 'on'
-        checklist.mobile_friendly = request.form.get('mobile_friendly') == 'on'
-        checklist.analytics_setup = request.form.get('analytics_setup') == 'on'
-        checklist.search_console_setup = request.form.get('search_console_setup') == 'on'
-        checklist.sitemap_submitted = request.form.get('sitemap_submitted') == 'on'
-        checklist.backlinks_started = request.form.get('backlinks_started') == 'on'
+        invoice_number = f"INV-{datetime.now().strftime('%Y%m')}-{Client.query.count() + 1:04d}"
+        invoice = Invoice(
+            client_id=client.id,
+            invoice_number=invoice_number,
+            amount=ServicePackage.query.get(client.package_id).monthly_price,
+            due_date=datetime.now() + timedelta(days=30),
+            description=f"Monthly SEO Services - {datetime.now().strftime('%B %Y')}"
+        )
+        db.session.add(invoice)
         
         db.session.commit()
         
-        project.seo_score = checklist.get_completion_percentage()
-        db.session.commit()
-        
-        flash('Checklist updated successfully!', 'success')
-        return redirect(url_for('checklist', project_id=project_id))
+        flash('Client added successfully!', 'success')
+        return redirect(url_for('admin_clients'))
     
-    return render_template('checklist.html', project=project, checklist=checklist)
+    packages = ServicePackage.query.filter_by(is_active=True).all()
+    return render_template('admin/new_client.html', packages=packages)
 
-@app.route('/project/<int:project_id>/speed-test')
-def speed_test(project_id):
-    project = Project.query.get_or_404(project_id)
-    return render_template('speed_test.html', project=project)
+@app.route('/admin/packages')
+@admin_required
+def admin_packages():
+    packages = ServicePackage.query.all()
+    return render_template('admin/packages.html', packages=packages)
 
-@app.route('/project/<int:project_id>/backlinks')
-def backlinks(project_id):
-    project = Project.query.get_or_404(project_id)
-    backlinks = Backlink.query.filter_by(project_id=project_id).all()
-    return render_template('backlinks.html', project=project, backlinks=backlinks)
+@app.route('/admin/deliverables')
+@admin_required
+def admin_deliverables():
+    deliverables = Deliverable.query.join(Client).join(User).order_by(Deliverable.due_date).all()
+    return render_template('admin/deliverables.html', deliverables=deliverables)
 
-@app.route('/project/<int:project_id>/backlink/add', methods=['POST'])
-def add_backlink(project_id):
-    backlink = Backlink(
-        project_id=project_id,
-        source_url=request.form.get('source_url'),
-        target_url=request.form.get('target_url'),
-        anchor_text=request.form.get('anchor_text'),
-        domain_authority=request.form.get('domain_authority', type=int),
-        status=request.form.get('status', 'pending')
+@app.route('/admin/deliverable/add/<int:client_id>', methods=['POST'])
+@admin_required
+def admin_add_deliverable(client_id):
+    deliverable = Deliverable(
+        client_id=client_id,
+        title=request.form.get('title'),
+        description=request.form.get('description'),
+        category=request.form.get('category'),
+        due_date=datetime.strptime(request.form.get('due_date'), '%Y-%m-%d') if request.form.get('due_date') else None
     )
-    db.session.add(backlink)
+    db.session.add(deliverable)
     db.session.commit()
-    flash('Backlink added successfully!', 'success')
-    return redirect(url_for('backlinks', project_id=project_id))
+    flash('Deliverable added successfully!', 'success')
+    return redirect(url_for('admin_client_detail', client_id=client_id))
 
-@app.route('/project/<int:project_id>/google-integration')
-def google_integration(project_id):
-    project = Project.query.get_or_404(project_id)
-    return render_template('google_integration.html', project=project)
+@app.route('/admin/deliverable/<int:deliverable_id>/complete', methods=['POST'])
+@admin_required
+def admin_complete_deliverable(deliverable_id):
+    deliverable = Deliverable.query.get_or_404(deliverable_id)
+    deliverable.status = 'completed'
+    deliverable.completed_date = datetime.now()
+    deliverable.notes = request.form.get('notes', '')
+    db.session.commit()
+    flash('Deliverable marked as completed!', 'success')
+    return redirect(request.referrer or url_for('admin_deliverables'))
 
-@app.route('/api/seo-score', methods=['POST'])
-def api_seo_score():
-    data = request.json
-    score = {
-        'title_score': 0,
-        'meta_score': 0,
-        'content_score': 0,
-        'overall_score': 0,
-        'suggestions': []
-    }
-    
-    if data:
-        title = data.get('title', '')
-        meta = data.get('meta_description', '')
-        content = data.get('content', '')
-        
-        if len(title) >= 30 and len(title) <= 60:
-            score['title_score'] = 100
-        elif len(title) > 0:
-            score['title_score'] = 50
-            score['suggestions'].append('Title should be between 30-60 characters')
-        else:
-            score['suggestions'].append('Add a title tag')
-        
-        if len(meta) >= 120 and len(meta) <= 160:
-            score['meta_score'] = 100
-        elif len(meta) > 0:
-            score['meta_score'] = 50
-            score['suggestions'].append('Meta description should be between 120-160 characters')
-        else:
-            score['suggestions'].append('Add a meta description')
-        
-        if len(content) >= 300:
-            score['content_score'] = 100
-        elif len(content) > 0:
-            score['content_score'] = 50
-            score['suggestions'].append('Content should be at least 300 words')
-        else:
-            score['suggestions'].append('Add page content')
-        
-        score['overall_score'] = round((score['title_score'] + score['meta_score'] + score['content_score']) / 3)
-    
-    return jsonify(score)
+@app.route('/admin/invoices')
+@admin_required
+def admin_invoices():
+    invoices = Invoice.query.join(Client).join(User).order_by(Invoice.issue_date.desc()).all()
+    return render_template('admin/invoices.html', invoices=invoices)
 
-def calculate_seo_score(page):
-    score = 0
+@app.route('/admin/invoice/<int:invoice_id>/pay', methods=['POST'])
+@admin_required
+def admin_pay_invoice(invoice_id):
+    invoice = Invoice.query.get_or_404(invoice_id)
+    payment = Payment(
+        invoice_id=invoice_id,
+        amount=request.form.get('amount', type=float),
+        payment_method=request.form.get('payment_method'),
+        transaction_id=request.form.get('transaction_id')
+    )
+    db.session.add(payment)
     
-    if page.meta_title and len(page.meta_title) >= 30 and len(page.meta_title) <= 60:
-        score += 20
+    invoice.status = 'paid'
+    invoice.paid_date = datetime.now()
+    db.session.commit()
     
-    if page.meta_description and len(page.meta_description) >= 120 and len(page.meta_description) <= 160:
-        score += 20
+    flash('Payment recorded successfully!', 'success')
+    return redirect(url_for('admin_invoices'))
+
+@app.route('/client/dashboard')
+@login_required
+def client_dashboard():
+    user = User.query.get(session['user_id'])
+    if user.role == 'admin':
+        return redirect(url_for('admin_dashboard'))
     
-    if page.h1_tag:
-        score += 20
+    client = Client.query.filter_by(user_id=user.id).first()
+    if not client:
+        flash('Client profile not found', 'danger')
+        return redirect(url_for('index'))
     
-    if page.content and len(page.content) >= 300:
-        score += 20
+    recent_deliverables = Deliverable.query.filter_by(client_id=client.id).order_by(
+        Deliverable.created_at.desc()).limit(5).all()
     
-    if page.slug and '/' in page.slug:
-        score += 20
+    recent_metrics = SEOMetric.query.filter_by(client_id=client.id).order_by(
+        SEOMetric.metric_date.desc()).limit(6).all()
     
-    return score
+    pending_invoices = Invoice.query.filter_by(client_id=client.id, status='unpaid').all()
+    
+    keywords = TrackedKeyword.query.filter_by(client_id=client.id).all()
+    
+    return render_template('client/dashboard.html', client=client, deliverables=recent_deliverables,
+                         metrics=recent_metrics, invoices=pending_invoices, keywords=keywords)
+
+@app.route('/client/deliverables')
+@login_required
+def client_deliverables():
+    user = User.query.get(session['user_id'])
+    client = Client.query.filter_by(user_id=user.id).first()
+    deliverables = Deliverable.query.filter_by(client_id=client.id).order_by(Deliverable.created_at.desc()).all()
+    return render_template('client/deliverables.html', client=client, deliverables=deliverables)
+
+@app.route('/client/invoices')
+@login_required
+def client_invoices():
+    user = User.query.get(session['user_id'])
+    client = Client.query.filter_by(user_id=user.id).first()
+    invoices = Invoice.query.filter_by(client_id=client.id).order_by(Invoice.issue_date.desc()).all()
+    return render_template('client/invoices.html', client=client, invoices=invoices)
+
+@app.route('/client/reports')
+@login_required
+def client_reports():
+    user = User.query.get(session['user_id'])
+    client = Client.query.filter_by(user_id=user.id).first()
+    metrics = SEOMetric.query.filter_by(client_id=client.id).order_by(SEOMetric.metric_date.desc()).all()
+    keywords = TrackedKeyword.query.filter_by(client_id=client.id).all()
+    return render_template('client/reports.html', client=client, metrics=metrics, keywords=keywords)
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True)

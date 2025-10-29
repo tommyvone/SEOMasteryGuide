@@ -1,95 +1,111 @@
 from datetime import datetime
 from flask_sqlalchemy import SQLAlchemy
+from werkzeug.security import generate_password_hash, check_password_hash
 
 db = SQLAlchemy()
 
-class Project(db.Model):
+class User(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(200), nullable=False)
-    niche = db.Column(db.String(100))
-    domain = db.Column(db.String(200))
-    target_keywords = db.Column(db.Text)
+    email = db.Column(db.String(120), unique=True, nullable=False)
+    password_hash = db.Column(db.String(255))
+    name = db.Column(db.String(100), nullable=False)
+    role = db.Column(db.String(20), default='client')
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    client = db.relationship('Client', backref='user', uselist=False, cascade='all, delete-orphan')
+    
+    def set_password(self, password):
+        self.password_hash = generate_password_hash(password)
+    
+    def check_password(self, password):
+        return check_password_hash(self.password_hash, password)
+
+class ServicePackage(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(100), nullable=False)
     description = db.Column(db.Text)
-    seo_score = db.Column(db.Integer, default=0)
+    monthly_price = db.Column(db.Float, nullable=False)
+    features = db.Column(db.Text)
+    keywords_tracked = db.Column(db.Integer, default=10)
+    pages_optimized = db.Column(db.Integer, default=5)
+    backlinks_monthly = db.Column(db.Integer, default=5)
+    monthly_reports = db.Column(db.Integer, default=1)
+    is_active = db.Column(db.Boolean, default=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow)
     
-    pages = db.relationship('Page', backref='project', lazy=True, cascade='all, delete-orphan')
-    keywords = db.relationship('Keyword', backref='project', lazy=True, cascade='all, delete-orphan')
-    checklist = db.relationship('SEOChecklist', backref='project', lazy=True, cascade='all, delete-orphan')
-    backlinks = db.relationship('Backlink', backref='project', lazy=True, cascade='all, delete-orphan')
+    clients = db.relationship('Client', backref='package', lazy=True)
 
-class Page(db.Model):
+class Client(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    project_id = db.Column(db.Integer, db.ForeignKey('project.id'), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    package_id = db.Column(db.Integer, db.ForeignKey('service_package.id'))
+    company_name = db.Column(db.String(200))
+    website_url = db.Column(db.String(200))
+    industry = db.Column(db.String(100))
+    status = db.Column(db.String(20), default='active')
+    start_date = db.Column(db.DateTime, default=datetime.utcnow)
+    billing_day = db.Column(db.Integer, default=1)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    invoices = db.relationship('Invoice', backref='client', lazy=True, cascade='all, delete-orphan')
+    deliverables = db.relationship('Deliverable', backref='client', lazy=True, cascade='all, delete-orphan')
+    seo_metrics = db.relationship('SEOMetric', backref='client', lazy=True, cascade='all, delete-orphan')
+    keywords = db.relationship('TrackedKeyword', backref='client', lazy=True, cascade='all, delete-orphan')
+
+class Deliverable(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    client_id = db.Column(db.Integer, db.ForeignKey('client.id'), nullable=False)
     title = db.Column(db.String(200), nullable=False)
-    slug = db.Column(db.String(200))
-    page_type = db.Column(db.String(50))
-    meta_title = db.Column(db.String(200))
-    meta_description = db.Column(db.Text)
-    h1_tag = db.Column(db.String(200))
-    content = db.Column(db.Text)
-    seo_score = db.Column(db.Integer, default=0)
+    description = db.Column(db.Text)
+    category = db.Column(db.String(50))
+    status = db.Column(db.String(20), default='pending')
+    due_date = db.Column(db.DateTime)
+    completed_date = db.Column(db.DateTime)
+    notes = db.Column(db.Text)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow)
 
-class Keyword(db.Model):
+class Invoice(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    project_id = db.Column(db.Integer, db.ForeignKey('project.id'), nullable=False)
+    client_id = db.Column(db.Integer, db.ForeignKey('client.id'), nullable=False)
+    invoice_number = db.Column(db.String(50), unique=True, nullable=False)
+    amount = db.Column(db.Float, nullable=False)
+    issue_date = db.Column(db.DateTime, default=datetime.utcnow)
+    due_date = db.Column(db.DateTime)
+    status = db.Column(db.String(20), default='unpaid')
+    paid_date = db.Column(db.DateTime)
+    description = db.Column(db.Text)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    payments = db.relationship('Payment', backref='invoice', lazy=True, cascade='all, delete-orphan')
+
+class Payment(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    invoice_id = db.Column(db.Integer, db.ForeignKey('invoice.id'), nullable=False)
+    amount = db.Column(db.Float, nullable=False)
+    payment_method = db.Column(db.String(50))
+    transaction_id = db.Column(db.String(100))
+    payment_date = db.Column(db.DateTime, default=datetime.utcnow)
+    notes = db.Column(db.Text)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+class SEOMetric(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    client_id = db.Column(db.Integer, db.ForeignKey('client.id'), nullable=False)
+    metric_date = db.Column(db.DateTime, default=datetime.utcnow)
+    organic_traffic = db.Column(db.Integer, default=0)
+    keyword_rankings = db.Column(db.Integer, default=0)
+    backlinks_count = db.Column(db.Integer, default=0)
+    domain_authority = db.Column(db.Integer, default=0)
+    page_authority = db.Column(db.Integer, default=0)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+class TrackedKeyword(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    client_id = db.Column(db.Integer, db.ForeignKey('client.id'), nullable=False)
     keyword = db.Column(db.String(200), nullable=False)
-    search_volume = db.Column(db.Integer)
-    difficulty = db.Column(db.String(50))
     current_rank = db.Column(db.Integer)
-    target_rank = db.Column(db.Integer)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-
-class SEOChecklist(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    project_id = db.Column(db.Integer, db.ForeignKey('project.id'), nullable=False)
-    
-    domain_selected = db.Column(db.Boolean, default=False)
-    hosting_setup = db.Column(db.Boolean, default=False)
-    ssl_installed = db.Column(db.Boolean, default=False)
-    core_pages_created = db.Column(db.Boolean, default=False)
-    keyword_research_done = db.Column(db.Boolean, default=False)
-    content_optimized = db.Column(db.Boolean, default=False)
-    meta_tags_set = db.Column(db.Boolean, default=False)
-    images_optimized = db.Column(db.Boolean, default=False)
-    site_speed_optimized = db.Column(db.Boolean, default=False)
-    mobile_friendly = db.Column(db.Boolean, default=False)
-    analytics_setup = db.Column(db.Boolean, default=False)
-    search_console_setup = db.Column(db.Boolean, default=False)
-    sitemap_submitted = db.Column(db.Boolean, default=False)
-    backlinks_started = db.Column(db.Boolean, default=False)
-    
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow)
-    
-    def get_completion_percentage(self):
-        total = 14
-        completed = sum([
-            self.domain_selected,
-            self.hosting_setup,
-            self.ssl_installed,
-            self.core_pages_created,
-            self.keyword_research_done,
-            self.content_optimized,
-            self.meta_tags_set,
-            self.images_optimized,
-            self.site_speed_optimized,
-            self.mobile_friendly,
-            self.analytics_setup,
-            self.search_console_setup,
-            self.sitemap_submitted,
-            self.backlinks_started
-        ])
-        return round((completed / total) * 100)
-
-class Backlink(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    project_id = db.Column(db.Integer, db.ForeignKey('project.id'), nullable=False)
-    source_url = db.Column(db.String(500))
-    target_url = db.Column(db.String(500))
-    anchor_text = db.Column(db.String(200))
-    domain_authority = db.Column(db.Integer)
-    status = db.Column(db.String(50), default='pending')
+    previous_rank = db.Column(db.Integer)
+    search_volume = db.Column(db.Integer)
+    url = db.Column(db.String(500))
+    last_checked = db.Column(db.DateTime, default=datetime.utcnow)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)

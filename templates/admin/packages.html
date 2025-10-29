@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+
+{% block title %}Service Packages - Admin{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-md-12">
+        <h1>Service Packages</h1>
+        <p class="text-muted">Manage your SEO service offerings</p>
+    </div>
+</div>
+
+<div class="row g-4">
+    {% for package in packages %}
+    <div class="col-md-4">
+        <div class="card h-100">
+            <div class="card-header bg-{{ 'success' if package.is_active else 'secondary' }} text-white">
+                <h5 class="mb-0">{{ package.name }}</h5>
+            </div>
+            <div class="card-body">
+                <div class="text-center mb-3">
+                    <div class="display-4">${{ "%.0f"|format(package.monthly_price) }}</div>
+                    <p class="text-muted">per month</p>
+                </div>
+                <p>{{ package.description }}</p>
+                <hr>
+                <ul class="list-unstyled">
+                    <li><i class="bi bi-check-circle text-success"></i> {{ package.keywords_tracked }} Keywords</li>
+                    <li><i class="bi bi-check-circle text-success"></i> {{ package.pages_optimized }} Pages Optimized</li>
+                    <li><i class="bi bi-check-circle text-success"></i> {{ package.backlinks_monthly }} Backlinks/Month</li>
+                    <li><i class="bi bi-check-circle text-success"></i> {{ package.monthly_reports }} Report(s)/Month</li>
+                </ul>
+                <p class="mb-0"><strong>Status:</strong> 
+                    <span class="badge bg-{{ 'success' if package.is_active else 'secondary' }}">
+                        {{ 'Active' if package.is_active else 'Inactive' }}
+                    </span>
+                </p>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% endblock %}

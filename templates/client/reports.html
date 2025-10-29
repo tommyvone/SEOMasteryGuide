@@ -1,0 +1,141 @@
+{% extends "base.html" %}
+
+{% block title %}SEO Reports - Client Portal{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-md-12">
+        <h1>SEO Performance Reports</h1>
+        <p class="text-muted">Track your SEO metrics and progress</p>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header bg-success text-white">
+                <h5 class="mb-0"><i class="bi bi-graph-up"></i> Performance Overview</h5>
+            </div>
+            <div class="card-body">
+                {% if metrics %}
+                    <canvas id="performanceChart" height="80"></canvas>
+                {% else %}
+                    <p class="text-muted text-center py-5">No performance data available yet</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0"><i class="bi bi-key"></i> Keyword Rankings</h5>
+            </div>
+            <div class="card-body">
+                {% if keywords %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Keyword</th>
+                                    <th>Current Rank</th>
+                                    <th>Previous Rank</th>
+                                    <th>Change</th>
+                                    <th>Search Volume</th>
+                                    <th>Last Checked</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for keyword in keywords %}
+                                <tr>
+                                    <td><strong>{{ keyword.keyword }}</strong></td>
+                                    <td>
+                                        {% if keyword.current_rank %}
+                                            <span class="badge bg-primary">{{ keyword.current_rank }}</span>
+                                        {% else %}
+                                            <span class="text-muted">Not ranked</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ keyword.previous_rank or 'N/A' }}</td>
+                                    <td>
+                                        {% if keyword.previous_rank and keyword.current_rank %}
+                                            {% set change = keyword.previous_rank - keyword.current_rank %}
+                                            {% if change > 0 %}
+                                                <span class="text-success"><i class="bi bi-arrow-up"></i> +{{ change }}</span>
+                                            {% elif change < 0 %}
+                                                <span class="text-danger"><i class="bi bi-arrow-down"></i> {{ change }}</span>
+                                            {% else %}
+                                                <span class="text-muted">-</span>
+                                            {% endif %}
+                                        {% else %}
+                                            <span class="text-muted">-</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ keyword.search_volume or 'N/A' }}</td>
+                                    <td>{{ keyword.last_checked.strftime('%Y-%m-%d') if keyword.last_checked else 'N/A' }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <p class="text-muted text-center py-5">No keywords tracked yet</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+{% if metrics %}
+<script>
+const ctx = document.getElementById('performanceChart');
+new Chart(ctx, {
+    type: 'line',
+    data: {
+        labels: [{% for m in metrics|reverse %}'{{ m.metric_date.strftime("%b %Y") }}',{% endfor %}],
+        datasets: [{
+            label: 'Organic Traffic',
+            data: [{% for m in metrics|reverse %}{{ m.organic_traffic }},{% endfor %}],
+            borderColor: 'rgb(75, 192, 192)',
+            tension: 0.1,
+            fill: false
+        }, {
+            label: 'Top 10 Rankings',
+            data: [{% for m in metrics|reverse %}{{ m.keyword_rankings }},{% endfor %}],
+            borderColor: 'rgb(54, 162, 235)',
+            tension: 0.1,
+            fill: false
+        }, {
+            label: 'Backlinks',
+            data: [{% for m in metrics|reverse %}{{ m.backlinks_count }},{% endfor %}],
+            borderColor: 'rgb(255, 99, 132)',
+            tension: 0.1,
+            fill: false
+        }, {
+            label: 'Domain Authority',
+            data: [{% for m in metrics|reverse %}{{ m.domain_authority }},{% endfor %}],
+            borderColor: 'rgb(153, 102, 255)',
+            tension: 0.1,
+            fill: false
+        }]
+    },
+    options: {
+        responsive: true,
+        plugins: {
+            legend: {
+                position: 'top',
+            },
+            title: {
+                display: true,
+                text: 'SEO Performance Trends'
+            }
+        }
+    }
+});
+</script>
+{% endif %}
+{% endblock %}

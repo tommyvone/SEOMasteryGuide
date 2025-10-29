@@ -1,0 +1,96 @@
+{% extends "base.html" %}
+
+{% block title %}New Client - Admin{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-md-12">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{{ url_for('admin_dashboard') }}">Dashboard</a></li>
+                <li class="breadcrumb-item"><a href="{{ url_for('admin_clients') }}">Clients</a></li>
+                <li class="breadcrumb-item active">New Client</li>
+            </ol>
+        </nav>
+        <h1>Add New Client</h1>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-8 offset-md-2">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0">Client Information</h5>
+            </div>
+            <div class="card-body">
+                <form method="POST">
+                    <h6 class="mb-3">Contact Details</h6>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="name" class="form-label">Contact Name *</label>
+                            <input type="text" class="form-control" id="name" name="name" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="email" class="form-label">Email Address *</label>
+                            <input type="email" class="form-control" id="email" name="email" required>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="password" class="form-label">Initial Password *</label>
+                        <input type="password" class="form-control" id="password" name="password" required>
+                        <div class="form-text">Client will use this to login to their portal</div>
+                    </div>
+
+                    <hr>
+
+                    <h6 class="mb-3">Company Information</h6>
+                    <div class="mb-3">
+                        <label for="company_name" class="form-label">Company Name</label>
+                        <input type="text" class="form-control" id="company_name" name="company_name">
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="website_url" class="form-label">Website URL</label>
+                            <input type="url" class="form-control" id="website_url" name="website_url"
+                                   placeholder="https://example.com">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="industry" class="form-label">Industry</label>
+                            <input type="text" class="form-control" id="industry" name="industry"
+                                   placeholder="e.g., E-commerce, Legal, Healthcare">
+                        </div>
+                    </div>
+
+                    <hr>
+
+                    <h6 class="mb-3">SEO Package</h6>
+                    <div class="mb-3">
+                        <label for="package_id" class="form-label">Select Package *</label>
+                        <select class="form-select" id="package_id" name="package_id" required>
+                            <option value="">Choose a package...</option>
+                            {% for package in packages %}
+                            <option value="{{ package.id }}">
+                                {{ package.name }} - ${{ "%.0f"|format(package.monthly_price) }}/month
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="alert alert-info">
+                        <i class="bi bi-info-circle"></i> An initial invoice will be automatically generated for the first month.
+                    </div>
+
+                    <div class="d-grid gap-2">
+                        <button type="submit" class="btn btn-primary btn-lg">
+                            <i class="bi bi-check-circle"></i> Add Client
+                        </button>
+                        <a href="{{ url_for('admin_clients') }}" class="btn btn-outline-secondary">Cancel</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

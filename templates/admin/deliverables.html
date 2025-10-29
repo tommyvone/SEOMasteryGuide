@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+
+{% block title %}Deliverables - Admin{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-md-12">
+        <h1>All Deliverables</h1>
+        <p class="text-muted">Track all client deliverables and tasks</p>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0"><i class="bi bi-list-check"></i> Deliverables</h5>
+            </div>
+            <div class="card-body">
+                {% if deliverables %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Client</th>
+                                    <th>Deliverable</th>
+                                    <th>Category</th>
+                                    <th>Status</th>
+                                    <th>Due Date</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for deliverable in deliverables %}
+                                <tr>
+                                    <td>
+                                        <strong>{{ deliverable.client.company_name or deliverable.client.user.name }}</strong>
+                                    </td>
+                                    <td>{{ deliverable.title }}</td>
+                                    <td><span class="badge bg-info">{{ deliverable.category }}</span></td>
+                                    <td>
+                                        <span class="badge bg-{{ 'success' if deliverable.status == 'completed' else 'warning' }}">
+                                            {{ deliverable.status }}
+                                        </span>
+                                    </td>
+                                    <td>{{ deliverable.due_date.strftime('%Y-%m-%d') if deliverable.due_date else 'N/A' }}</td>
+                                    <td>
+                                        {% if deliverable.status != 'completed' %}
+                                        <form method="POST" action="{{ url_for('admin_complete_deliverable', deliverable_id=deliverable.id) }}" class="d-inline">
+                                            <button type="submit" class="btn btn-sm btn-success">Complete</button>
+                                        </form>
+                                        {% else %}
+                                            <span class="text-success"><i class="bi bi-check-circle"></i> Done</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <p class="text-muted text-center py-5">No deliverables yet</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

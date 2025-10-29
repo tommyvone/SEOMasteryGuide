@@ -1,0 +1,171 @@
+{% extends "base.html" %}
+
+{% block title %}Client Dashboard - SEO Agency{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-md-12">
+        <h1>Welcome, {{ client.company_name or client.user.name }}!</h1>
+        <p class="text-muted">Your SEO performance dashboard</p>
+    </div>
+</div>
+
+<div class="row g-4 mb-4">
+    <div class="col-md-3">
+        <div class="card text-center">
+            <div class="card-body">
+                <h6 class="text-muted">Your Package</h6>
+                <h4>{{ client.package.name if client.package else 'No Package' }}</h4>
+                <p class="text-muted mb-0">
+                    ${{ "%.0f"|format(client.package.monthly_price) if client.package else '0' }}/month
+                </p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-center">
+            <div class="card-body">
+                <h6 class="text-muted">Keywords Tracked</h6>
+                <h4>{{ keywords|length }}</h4>
+                <p class="text-muted mb-0">of {{ client.package.keywords_tracked if client.package else '0' }} allowed</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-center">
+            <div class="card-body">
+                <h6 class="text-muted">Pending Invoices</h6>
+                <h4>{{ invoices|length }}</h4>
+                <p class="text-muted mb-0">
+                    {% if invoices %}
+                        ${{ "%.2f"|format(invoices|sum(attribute='amount')) }}
+                    {% else %}
+                        All paid
+                    {% endif %}
+                </p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-center">
+            <div class="card-body">
+                <h6 class="text-muted">Member Since</h6>
+                <h4>{{ client.start_date.strftime('%b %Y') }}</h4>
+                <p class="text-muted mb-0">{{ ((datetime.now() - client.start_date).days // 30) }} months</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% if metrics %}
+<div class="row mb-4">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header bg-success text-white">
+                <h5 class="mb-0"><i class="bi bi-graph-up"></i> Latest SEO Metrics</h5>
+            </div>
+            <div class="card-body">
+                {% set latest = metrics[0] %}
+                <div class="row text-center">
+                    <div class="col-md-3">
+                        <h3>{{ latest.organic_traffic }}</h3>
+                        <p class="text-muted">Monthly Traffic</p>
+                    </div>
+                    <div class="col-md-3">
+                        <h3>{{ latest.keyword_rankings }}</h3>
+                        <p class="text-muted">Top 10 Rankings</p>
+                    </div>
+                    <div class="col-md-3">
+                        <h3>{{ latest.backlinks_count }}</h3>
+                        <p class="text-muted">Total Backlinks</p>
+                    </div>
+                    <div class="col-md-3">
+                        <h3>{{ latest.domain_authority }}</h3>
+                        <p class="text-muted">Domain Authority</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<div class="row">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-list-check"></i> Recent Deliverables</h5>
+            </div>
+            <div class="card-body">
+                {% if deliverables %}
+                    <div class="list-group list-group-flush">
+                        {% for deliverable in deliverables %}
+                        <div class="list-group-item">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <strong>{{ deliverable.title }}</strong>
+                                    <small class="text-muted d-block">{{ deliverable.category }}</small>
+                                </div>
+                                <span class="badge bg-{{ 'success' if deliverable.status == 'completed' else 'warning' }}">
+                                    {{ deliverable.status }}
+                                </span>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    <a href="{{ url_for('client_deliverables') }}" class="btn btn-outline-primary w-100 mt-3">
+                        View All Deliverables
+                    </a>
+                {% else %}
+                    <p class="text-muted text-center py-3">No deliverables yet</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-key"></i> Tracked Keywords</h5>
+            </div>
+            <div class="card-body">
+                {% if keywords %}
+                    <div class="list-group list-group-flush">
+                        {% for keyword in keywords[:5] %}
+                        <div class="list-group-item">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <strong>{{ keyword.keyword }}</strong>
+                                    {% if keyword.previous_rank and keyword.current_rank %}
+                                        {% set change = keyword.previous_rank - keyword.current_rank %}
+                                        {% if change > 0 %}
+                                            <i class="bi bi-arrow-up-circle text-success"></i>
+                                        {% elif change < 0 %}
+                                            <i class="bi bi-arrow-down-circle text-danger"></i>
+                                        {% endif %}
+                                    {% endif %}
+                                </div>
+                                <span class="badge bg-primary">Rank: {{ keyword.current_rank or 'N/A' }}</span>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    <a href="{{ url_for('client_reports') }}" class="btn btn-outline-primary w-100 mt-3">
+                        View Full Report
+                    </a>
+                {% else %}
+                    <p class="text-muted text-center py-3">No keywords tracked yet</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+const datetime = {
+    now: function() { return new Date(); }
+};
+</script>
+{% endblock %}
